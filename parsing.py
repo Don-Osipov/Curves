@@ -41,9 +41,10 @@ The file follows the following format:
 
 See the file script for an example of the file format
 """
-ARG_COMMANDS = [ 'line', 'scale', 'move', 'rotate', 'save' ]
+ARG_COMMANDS = ["line", "scale", "move", "rotate", "save", "circle", "hermite", "bezier"]
 
-def parse_file( fname, edges, transform, screen, color ):
+
+def parse_file(fname, edges, transform, screen, color):
 
     f = open(fname)
     lines = f.readlines()
@@ -51,54 +52,66 @@ def parse_file( fname, edges, transform, screen, color ):
     c = 0
     while c < len(lines):
         line = lines[c].strip()
-        #print ':' + line + ':'
+        # print ':' + line + ':'
 
         if line in ARG_COMMANDS:
-            c+= 1
-            args = lines[c].strip().split(' ')
+            c += 1
+            args = lines[c].strip().split(" ")
+            if line != "save":
+                args = [float(arg) for arg in args]
 
-        if line == 'line':            
-            #print 'LINE\t' + str(args)
+        if line == "line":
 
-            add_edge( edges,
-                      float(args[0]), float(args[1]), float(args[2]),
-                      float(args[3]), float(args[4]), float(args[5]) )
+            add_edge(edges, *args)
 
-        elif line == 'scale':
-            #print 'SCALE\t' + str(args)
-            t = make_scale(float(args[0]), float(args[1]), float(args[2]))
+        elif line == "scale":
+            # print 'SCALE\t' + str(args)
+            t = make_scale(*args)
             matrix_mult(t, transform)
 
-        elif line == 'move':
-            #print 'MOVE\t' + str(args)
-            t = make_translate(float(args[0]), float(args[1]), float(args[2]))
+        elif line == "move":
+            # print 'MOVE\t' + str(args)
+            t = make_translate(*args)
             matrix_mult(t, transform)
 
-        elif line == 'rotate':
-            #print 'ROTATE\t' + str(args)
-            theta = float(args[1]) * (math.pi / 180)
-            
-            if args[0] == 'x':
+        elif line == "circle":
+            add_circle(edges, *args, 0.01)
+
+        elif line == "hermite":
+            add_curve(
+                edges, *args, 0.01, "hermite",
+            )
+
+        elif line == "bezier":
+            add_curve(
+                edges, *args, 0.01, "bezier",
+            )
+
+        elif line == "rotate":
+            # print 'ROTATE\t' + str(args)
+            theta = args[1] * (math.pi / 180)
+
+            if args[0] == "x":
                 t = make_rotX(theta)
-            elif args[0] == 'y':
+            elif args[0] == "y":
                 t = make_rotY(theta)
             else:
                 t = make_rotZ(theta)
             matrix_mult(t, transform)
-                
-        elif line == 'ident':
+
+        elif line == "ident":
             ident(transform)
 
-        elif line == 'apply':
-            matrix_mult( transform, edges )
+        elif line == "apply":
+            matrix_mult(transform, edges)
 
-        elif line == 'display' or line == 'save':
+        elif line == "display" or line == "save":
             clear_screen(screen)
             draw_lines(edges, screen, color)
 
-            if line == 'display':
+            if line == "display":
                 display(screen)
             else:
                 save_extension(screen, args[0])
-            
-        c+= 1
+        c += 1
+
